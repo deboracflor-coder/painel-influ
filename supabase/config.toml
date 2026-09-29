@@ -1,0 +1,6 @@
+# Configuração usada pelo Supabase CLI (supabase link / db push / functions deploy)
+project_id = "painel-influ"
+
+[functions.sync-runner]
+# A função confere sozinha que quem chama usa a service role (ver index.ts)
+verify_jwt = false

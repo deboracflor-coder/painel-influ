@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Aplicar migrações (com imitação das partes do Supabase)
+        run: |
+          grep -v "create extension if not exists pg_" supabase/migrations/20260929000200_app_support.sql > /tmp/m2.sql
+          psql -v ON_ERROR_STOP=1 -q -f supabase/tests/stubs_local.sql -f supabase/migrations/20260929000100_schema.sql -f /tmp/m2.sql
+      - name: Regras de acesso por marca (RLS)
+        run: psql -v ON_ERROR_STOP=1 -At -f supabase/tests/rls_test.sql | tee /tmp/rls.txt && grep -q "TODOS OS TESTES PASSARAM" /tmp/rls.txt
+      - name: Funções de primeiro acesso, tokens e agendamento
+        run: |
+          psql -v ON_ERROR_STOP=1 -At -f supabase/tests/app_support_test.sql | tee /tmp/m2.txt
+          ! grep -qx "f" /tmp/m2.txt
