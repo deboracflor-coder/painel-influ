@@ -1,7 +1,7 @@
 # 0001 — Fase 1: diagnóstico e decisões propostas (Social Media Intelligence)
 
 - Data: 2026-11-04
-- Status: **proposta, aguardando aprovação da Débora**
+- Status: **aprovada pela Débora em 2026-11-04** (recomendações 1, 2 e 3 aceitas)
 - Documento completo: https://claude.ai/artifact/Xq16uoK8MzG2FXarMWH1Lj
 
 ## Contexto
@@ -17,10 +17,10 @@ Cron, Vault). V1 só orgânica; integrações na ordem Instagram, Facebook, YouT
 - Google Sheets só para exportação, nunca como banco.
 - Nenhum dado privado por link público (a tabela `share_links` sai).
 
-## Decisões aguardando aprovação
+## Decisões aprovadas
 
 1. Modelo do produto: organização (agência) → clientes → perfis sociais. Camada de parcerias
-   (marcas, entregas, campanhas, valores, EMV) fora da V1, preservada na tag `v0-nextjs`.
+   (marcas, entregas, campanhas, valores, EMV) fora da V1, preservada na branch `legado/v0-nextjs`.
 2. LinkedIn fora da V1 (valor mantido no enum de plataformas).
 3. Importação manual CSV/Excel: manter só para métricas que a API não entrega, marcada "Dado manual",
    ou retirar da V1.

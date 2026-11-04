@@ -1,10 +1,10 @@
 node_modules/
-.next/
-out/
+dist/
 .env
 .env*.local
 .vercel
 *.tsbuildinfo
-next-env.d.ts
-tests/output/
 supabase/.temp/
+supabase/.branches/
+coverage/
+test-results/
