@@ -1,10 +1,11 @@
 import { useIsFetching } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthProvider';
 import { useClientContext } from '../features/clients/ClientContext';
 import { ClientSelector } from '../features/clients/ClientSelector';
 import { ACCESS_LABEL, useAccess } from '../features/clients/queries';
+import { LoadingState } from '../components/States';
 import { REFRESH_MS } from './queryClient';
 
 function useLastRefresh(): Date | null {
@@ -82,7 +83,9 @@ export function AppLayout() {
           </div>
         </header>
         <main className="view" tabIndex={-1}>
-          <Outlet />
+          <Suspense fallback={<LoadingState />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

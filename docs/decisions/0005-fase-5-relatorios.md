@@ -1,6 +1,6 @@
 # 0005 · Fase 5: relatórios, exportação, monitoramento e importação manual
 
-Situação: entregue para validação (2026-11-05). Nada desta fase depende de contas reais conectadas.
+Situação: validada (PR #4 incorporado em 2026-11-05). Nada desta fase depende de contas reais conectadas.
 
 ## Relatório (`/relatorio`, todos os papéis)
 

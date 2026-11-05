@@ -24,6 +24,18 @@ export function engagement(m: PostMetrics): number | null {
   return parts.length ? parts.reduce((a, b) => a + b, 0) : null;
 }
 
+/**
+ * Métricas que a API oficial da rede não entrega (iguais aos coletores em
+ * supabase/functions/_shared/collect). Na tela aparecem como "Indisponível", não como "Sem dado".
+ */
+export const NOT_PROVIDED: Partial<Record<Platform, readonly MetricKey[]>> = {
+  instagram: [],
+  facebook: ['saves'],
+  youtube: ['reach', 'saves'],
+};
+export const notProvided = (platform: Platform, key: MetricKey): string | undefined =>
+  (NOT_PROVIDED[platform] ?? []).includes(key) ? 'A rede não fornece esta métrica' : undefined;
+
 export type ErBase = 'reach' | 'views' | 'impressions';
 /** Base da taxa de engajamento por rede. */
 export const ER_BASE: Record<Platform, ErBase> = {

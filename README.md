@@ -3,10 +3,10 @@
 Plataforma para uma agência acompanhar o desempenho orgânico das redes sociais dos seus clientes.
 A equipe da agência vê os clientes que tem autorização; cada cliente vê só os próprios dados.
 
-**Situação:** Fase 5 entregue para validação: relatório do período (tela, PDF, CSV e Google Sheets),
-monitoramento das coletas de todos os clientes e importação manual da série diária.
-As integrações (Fase 4) estão prontas; conectar contas reais depende dos apps da Meta e do Google
-(`docs/runbooks/integracoes.md`) e pode ser feito depois, sem mudar o código.
+**Situação:** Fase 6 entregue para validação: homologação (testes de ponta a ponta no navegador,
+desempenho e segurança) e preparação para publicar na Vercel (`docs/runbooks/publicar-na-vercel.md`).
+Conectar contas reais depende dos apps da Meta e do Google (`docs/runbooks/integracoes.md`) e pode
+ser feito depois, sem mudar o código. Roteiro de homologação: `docs/homologacao.md`.
 
 Regras do projeto: nenhuma métrica é inventada; métrica que a API não fornece aparece como
 indisponível, nunca como zero; dados fictícios só no ambiente local e sempre marcados.
@@ -29,6 +29,7 @@ React + Vite + TypeScript (Vercel) · Supabase: PostgreSQL, Auth, RLS, Edge Func
 | `supabase/functions` | `admin-users` (convites), `oauth-start`/`oauth-callback` (conexão), `account-actions` (coletar/desconectar), `sync-worker` (coleta agendada); `_shared/collect` tem os coletores de cada rede |
 | `supabase/tests` | testes pgTAP de privilégios e isolamento |
 | `tests/unit`, `tests/api` | testes do app e de isolamento pela API REST |
+| `tests/e2e` | testes de ponta a ponta no navegador (Playwright) contra o site compilado |
 | `docs/decisions`, `docs/runbooks` | decisões técnicas e passo a passo de configuração |
 
 ## Rodar no computador
@@ -60,6 +61,9 @@ npm run db:test                                  # pgTAP: privilégios e isolame
 npx supabase functions serve --env-file supabase/functions/.env.test   # outro terminal
 SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... npm run test:api
 npm run typecheck:functions                      # tipos das Edge Functions (Deno)
+npx playwright install chromium                  # uma vez
+SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... npm run test:e2e
+npm run build && npm run check:bundle            # orçamento de tamanho
 ```
 
 Os testes de integração trocam Meta e Google por um servidor de teste local; os valores em
@@ -70,5 +74,6 @@ tipos do banco estão em dia e se a service role não aparece no bundle.
 
 ## Publicar
 
-Veja `docs/runbooks/supabase-e-primeiro-acesso.md`. Na Vercel só entram `VITE_SUPABASE_URL` e
-`VITE_SUPABASE_ANON_KEY`; nenhum segredo vai para o navegador nem para o GitHub.
+Veja `docs/runbooks/supabase-e-primeiro-acesso.md` e depois `docs/runbooks/publicar-na-vercel.md`.
+Na Vercel só entram `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`; nenhum segredo vai para o
+navegador nem para o GitHub.

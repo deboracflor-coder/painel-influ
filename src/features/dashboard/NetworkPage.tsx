@@ -4,7 +4,7 @@ import { ContentCard } from '../../components/ContentCard';
 import { Kpi } from '../../components/Kpi';
 import { EmptyState } from '../../components/States';
 import { fmtDateTime, fmtHours, fmtPct, fmtSigned, PLATFORM_LABEL, PLATFORM_ORDER } from '../../domain/format';
-import { ER_BASE, followerGrowth, isNum, rank, totals } from '../../domain/metrics';
+import { ER_BASE, followerGrowth, isNum, notProvided, rank, totals } from '../../domain/metrics';
 import type { Platform } from '../../domain/types';
 import { FilterBar } from '../filters/FilterBar';
 import { useDashboardData } from '../data/useDashboardData';
@@ -71,13 +71,13 @@ export function NetworkPage() {
         <Kpi label={fLabel} value={g.followers} prev={gp.followers} compare={c} tip={TIPS.followers} />
         <Kpi label={`Novos ${fLabel.toLowerCase()} (líquido)`} value={g.gained} prev={gp.gained} compare={c} tip={TIPS.growth} fmt={fmtSigned}
           extra={isNum(g.pct) ? <span>{fmtPct(g.pct)}</span> : null} />
-        <Kpi label="Alcance" value={t.reach} prev={tp.reach} compare={c} tip={TIPS.reach} />
+        <Kpi label="Alcance" value={t.reach} prev={tp.reach} compare={c} tip={TIPS.reach} unavailable={notProvided(platform, 'reach')} />
         <Kpi label="Visualizações" value={t.views} prev={tp.views} compare={c} tip={TIPS.views} />
         <Kpi label="Visualizações médias" value={t.avgViews} prev={tp.avgViews} compare={c} tip={TIPS.avgViews} />
         <Kpi label={platform === 'facebook' ? 'Reações' : 'Curtidas'} value={t.likes} prev={tp.likes} compare={c} tip={TIPS.likes} />
         <Kpi label="Comentários" value={t.comments} prev={tp.comments} compare={c} tip={TIPS.comments} />
         <Kpi label="Compartilhamentos" value={t.shares} prev={tp.shares} compare={c} tip={TIPS.shares} />
-        <Kpi label="Salvamentos" value={t.saves} prev={tp.saves} compare={c} tip={TIPS.saves} />
+        <Kpi label="Salvamentos" value={t.saves} prev={tp.saves} compare={c} tip={TIPS.saves} unavailable={notProvided(platform, 'saves')} />
         <Kpi label="Engajamentos" value={t.engagement} prev={tp.engagement} compare={c} tip={TIPS.engagement} />
         <Kpi label="Taxa de engajamento" value={t.er} prev={tp.er} compare={c} tip={TIPS.er} fmt={(v) => fmtPct(v, 2)}
           extra={<span>base: {BASE_LABEL[ER_BASE[platform]]}</span>} />

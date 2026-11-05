@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseCount, parseDay, parseImportCsv } from '../../src/domain/importCsv';
-import { buildReport, reportTables, toCsv, type ReportInput } from '../../src/domain/report';
+import { asciiFileName, buildReport, reportTables, toCsv, type ReportInput } from '../../src/domain/report';
 import type { Post, PostMetrics } from '../../src/domain/types';
 
 const M = (m: Partial<PostMetrics>): PostMetrics => ({
@@ -80,6 +80,11 @@ describe('Planilhas', () => {
     const c = pub.find((r) => r[4] === 'Post c')!;
     expect(c[14]).toBe('Dado manual');
     expect(c[7]).toBeNull(); // alcance do YouTube
+  });
+  it('nome do arquivo sem acentos nem caracteres proibidos', () => {
+    expect(asciiFileName('Relatório Aurora Cosméticos 2026-10-01 a 2026-10-31 - Série diária.csv'))
+      .toBe('Relatorio Aurora Cosmeticos 2026-10-01 a 2026-10-31 - Serie diaria.csv');
+    expect(asciiFileName('A/B: "c" ✦.csv')).toBe('A-B- -c- .csv');
   });
   it('CSV no padrão brasileiro, vazio para sem dado, sem fórmulas', () => {
     const csv = toCsv([['Nome', 'Valor'], ['a;b', 1.5], ['=HYPERLINK("x")', null], ['ok', -3]]);
