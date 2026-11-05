@@ -139,14 +139,14 @@ isOneToOne: false
                   ]
                 },"oauth_states": {
                   Row: {
-                    "client_id": string,"code_verifier": string | null,"created_at": string,"expires_at": string,"organization_id": string,"platform": Database["public"]['Enums']["platform_t"],"state": string,"used_at": string | null,"user_id": string
+                    "client_id": string,"code_verifier": string | null,"created_at": string,"expires_at": string,"organization_id": string,"platform": Database["public"]['Enums']["platform_t"] | null,"provider": string | null,"return_to": string | null,"state": string,"used_at": string | null,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "client_id": string,"code_verifier"?: string | null,"created_at"?: string,"expires_at": string,"organization_id": string,"platform": Database["public"]['Enums']["platform_t"],"state": string,"used_at"?: string | null,"user_id": string
+                    "client_id": string,"code_verifier"?: string | null,"created_at"?: string,"expires_at": string,"organization_id": string,"platform"?: Database["public"]['Enums']["platform_t"] | null,"provider"?: string | null,"return_to"?: string | null,"state": string,"used_at"?: string | null,"user_id": string
                   }
                   Update: {
-                    "client_id"?: string,"code_verifier"?: string | null,"created_at"?: string,"expires_at"?: string,"organization_id"?: string,"platform"?: Database["public"]['Enums']["platform_t"],"state"?: string,"used_at"?: string | null,"user_id"?: string
+                    "client_id"?: string,"code_verifier"?: string | null,"created_at"?: string,"expires_at"?: string,"organization_id"?: string,"platform"?: Database["public"]['Enums']["platform_t"] | null,"provider"?: string | null,"return_to"?: string | null,"state"?: string,"used_at"?: string | null,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -340,10 +340,16 @@ isOneToOne: false
             "bootstrap_organization":
 { Args: { "p_admin": string,"p_name": string }; Returns: string
                            },
+"can_operate":
+{ Args: { "p_client": string }; Returns: boolean
+                           },
 "client_posts":
 { Args: { "p_client": string,"p_from": string,"p_to": string }; Returns: {
               "account_id": string,"avg_watch_time_seconds": number,"caption": string,"collected_at": string,"comments": number,"follows": number,"format": Database["public"]['Enums']["post_format_t"],"id": string,"impressions": number,"likes": number,"link_clicks": number,"permalink": string,"platform": Database["public"]['Enums']["platform_t"],"profile_visits": number,"published_at": string,"reach": number,"saves": number,"shares": number,"source": Database["public"]['Enums']["data_source_t"],"thumbnail_url": string,"views": number,"watch_time_seconds": number
             }[]
+                           },
+"ingest_sync_batch":
+{ Args: { "p_account": string,"p_payload": Json }; Returns: Json
                            },
 "read_account_token":
 { Args: { "p_account_id": string }; Returns: Json

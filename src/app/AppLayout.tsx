@@ -50,6 +50,7 @@ export function AppLayout() {
           <NavLink className="nav-link" to={{ pathname: '/publicacoes', search }}>Publicações</NavLink>
           {isAgency && <>
             <div className="nav-group">Agência</div>
+            <NavLink className="nav-link" to={{ pathname: '/contas', search }}>Contas conectadas</NavLink>
             <NavLink className="nav-link" to={{ pathname: '/historico', search }}>Histórico de coleta</NavLink>
             {kind === 'org_admin' && <>
               <NavLink className="nav-link" to={{ pathname: '/clientes', search }}>Clientes</NavLink>

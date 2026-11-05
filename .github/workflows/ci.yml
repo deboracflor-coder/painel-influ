@@ -21,6 +21,8 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      - name: Tipos das Edge Functions (Deno)
+        run: npm run typecheck:functions
       - run: npm test
       - name: Build (só variáveis públicas)
         env:
@@ -48,7 +50,7 @@ jobs:
           diff -u src/types/database.ts /tmp/database.ts
       - name: Servir Edge Functions
         run: |
-          nohup npx supabase functions serve > /tmp/functions.log 2>&1 &
+          nohup npx supabase functions serve --env-file supabase/functions/.env.test > /tmp/functions.log 2>&1 &
           for i in $(seq 1 30); do
             code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:54321/functions/v1/admin-users -d '{}' || true)
             [ "$code" = "401" ] && exit 0; sleep 2

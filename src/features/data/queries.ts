@@ -10,7 +10,7 @@ export function useAccounts(clientId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('social_accounts')
-        .select('id, platform, handle, display_name, status, last_synced_at, last_error, sync_enabled, sync_frequency_minutes, token_expires_at')
+        .select('id, platform, handle, display_name, status, last_synced_at, last_error, sync_enabled, sync_frequency_minutes, token_expires_at, next_sync_at')
         .eq('client_id', clientId!)
         .order('platform');
       if (error) throw error;

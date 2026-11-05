@@ -3,9 +3,9 @@
 Plataforma para uma agência acompanhar o desempenho orgânico das redes sociais dos seus clientes.
 A equipe da agência vê os clientes que tem autorização; cada cliente vê só os próprios dados.
 
-**Situação:** Fase 3 (painel) entregue para validação: visão executiva, por rede, publicações,
-histórico de coleta, filtros e gestão de clientes e pessoas com convite por e-mail.
-A conexão com as redes chega na Fase 4; até lá só o ambiente local tem dados, e eles são fictícios.
+**Situação:** Fase 4 (integrações) entregue para validação: conexão de Instagram, Facebook e YouTube
+por OAuth, tokens no Supabase Vault, coleta agendada a cada 15 minutos e tela de contas conectadas.
+Para conectar contas reais faltam os apps da Meta e do Google (`docs/runbooks/integracoes.md`).
 A versão anterior (Next.js, influenciador + marcas parceiras) está na branch `legado/v0-nextjs`.
 
 Regras do projeto: nenhuma métrica é inventada; métrica que a API não fornece aparece como
@@ -26,7 +26,7 @@ React + Vite + TypeScript (Vercel) · Supabase: PostgreSQL, Auth, RLS, Edge Func
 | `src/styles` | `prototipo.css` (identidade visual do protótipo) + `app.css` |
 | `src/types/database.ts` | tipos gerados do banco (`npm run db:types`) |
 | `supabase/migrations` | estrutura, segurança (privilégios + RLS), auditoria, leitura do painel e regra de equipe |
-| `supabase/functions` | `admin-users`: convite de pessoas (única peça que usa a service role) |
+| `supabase/functions` | `admin-users` (convites), `oauth-start`/`oauth-callback` (conexão), `account-actions` (coletar/desconectar), `sync-worker` (coleta agendada); `_shared/collect` tem os coletores de cada rede |
 | `supabase/tests` | testes pgTAP de privilégios e isolamento |
 | `tests/unit`, `tests/api` | testes do app e de isolamento pela API REST |
 | `docs/decisions`, `docs/runbooks` | decisões técnicas e passo a passo de configuração |
@@ -41,7 +41,7 @@ npm run db:start                       # sobe o Supabase local
 npx supabase status -o env             # mostra API_URL, ANON_KEY e SERVICE_ROLE_KEY locais
 cp .env.example .env.local             # preencha VITE_SUPABASE_ANON_KEY com a ANON_KEY local
 SUPABASE_URL=<API_URL> SUPABASE_SERVICE_ROLE_KEY=<SERVICE_ROLE_KEY> npx tsx scripts/seed-local.ts
-npx supabase functions serve           # em outro terminal: convites (tela Pessoas)
+npx supabase functions serve           # em outro terminal: convites e integrações
 npm run dev                            # http://127.0.0.1:5173
 ```
 
@@ -57,8 +57,13 @@ como demonstração (selo “Dados fictícios”). Ele se recusa a rodar fora do
 ```bash
 npm run lint && npm run typecheck && npm test   # app
 npm run db:test                                  # pgTAP: privilégios e isolamento no banco
+npx supabase functions serve --env-file supabase/functions/.env.test   # outro terminal
 SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... npm run test:api
+npm run typecheck:functions                      # tipos das Edge Functions (Deno)
 ```
+
+Os testes de integração trocam Meta e Google por um servidor de teste local; os valores em
+`supabase/functions/.env.test` são só de teste.
 
 O CI (`.github/workflows/ci.yml`) roda tudo isso em cada PR, sobe o Supabase local e as Edge Functions, confere se os
 tipos do banco estão em dia e se a service role não aparece no bundle.
