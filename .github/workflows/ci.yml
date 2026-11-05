@@ -5,8 +5,12 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   app:
+    name: App (lint, tipos, testes, build)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,32 +19,39 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run lint
       - run: npm run typecheck
       - run: npm test
-      - run: npm run build
+      - name: Build (só variáveis públicas)
+        env:
+          VITE_SUPABASE_URL: http://127.0.0.1:54321
+          VITE_SUPABASE_ANON_KEY: chave-publica-de-exemplo-para-build
+        run: npm run build
 
   database:
+    name: Banco (RLS, privilégios e isolamento)
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_PASSWORD: postgres
-        ports: ['5432:5432']
-        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
-    env:
-      PGHOST: localhost
-      PGUSER: postgres
-      PGPASSWORD: postgres
     steps:
       - uses: actions/checkout@v4
-      - name: Aplicar migrações (com imitação das partes do Supabase)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Subir Supabase local
+        run: npx supabase start -x studio,imgproxy,vector,logflare,supavisor,postgres-meta,edge-runtime
+      - name: Testes pgTAP (privilégios + isolamento)
+        run: npx supabase test db
+      - name: Tipos do banco estão em dia
         run: |
-          grep -v "create extension if not exists pg_" supabase/migrations/20260929000200_app_support.sql > /tmp/m2.sql
-          psql -v ON_ERROR_STOP=1 -q -f supabase/tests/stubs_local.sql -f supabase/migrations/20260929000100_schema.sql -f /tmp/m2.sql
-      - name: Regras de acesso por marca (RLS)
-        run: psql -v ON_ERROR_STOP=1 -At -f supabase/tests/rls_test.sql | tee /tmp/rls.txt && grep -q "TODOS OS TESTES PASSARAM" /tmp/rls.txt
-      - name: Funções de primeiro acesso, tokens e agendamento
+          npx supabase gen types typescript --local > /tmp/database.ts
+          diff -u src/types/database.ts /tmp/database.ts
+      - name: Testes de isolamento pela API REST
         run: |
-          psql -v ON_ERROR_STOP=1 -At -f supabase/tests/app_support_test.sql | tee /tmp/m2.txt
-          ! grep -qx "f" /tmp/m2.txt
+          eval "$(npx supabase status -o env | sed 's/^/export /')"
+          SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" npm run test:api
+      - name: Bundle não contém a service role
+        run: |
+          eval "$(npx supabase status -o env | sed 's/^/export /')"
+          VITE_SUPABASE_URL="$API_URL" VITE_SUPABASE_ANON_KEY="$ANON_KEY" npm run build
+          if grep -rqF "$SERVICE_ROLE_KEY" dist; then echo "service role encontrada no bundle"; exit 1; fi

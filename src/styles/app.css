@@ -1,0 +1,28 @@
+/* Complementos ao CSS do protótipo (prototipo.css), usando os mesmos tokens. */
+#root { min-height: 100%; }
+.shell { min-height: 100%; }
+
+.state { padding: 40px 16px; text-align: center; color: var(--ink-3); }
+
+.auth-page { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+.auth-card { width: min(100%, 400px); display: flex; flex-direction: column; gap: 18px; padding: 28px; }
+.auth-card h1 { margin: 0; font-family: var(--font-display); font-style: italic; font-size: 28px; color: var(--accent); }
+.auth-form { display: flex; flex-direction: column; gap: 12px; }
+.auth-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; font-weight: 700; color: var(--ink-2); }
+.auth-form input { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.auth-form .btn { justify-content: center; }
+.auth-hint { margin: 0; font-size: 12px; color: var(--ink-3); text-align: center; }
+.form-error { margin: 0; padding: 8px 10px; border-radius: 8px; background: var(--bad-bg); color: var(--bad); font-size: 13px; }
+.form-notice { margin: 0; padding: 8px 10px; border-radius: 8px; background: var(--good-bg); color: var(--good); font-size: 13px; }
+
+.user-box { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-top: 1px solid var(--line); }
+.viewer-box + .user-box { margin-top: 0; }
+.sidebar > .viewer-box { margin-top: auto; }
+.sidebar > .viewer-box:only-of-type + .user-box { margin-top: 0; }
+.user-email { font-size: 12.5px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-box .btn { align-self: flex-start; }
+
+.scrim { display: none; }
+@media (max-width: 860px) {
+  .scrim { display: block; position: fixed; inset: 0; z-index: 30; background: rgba(0, 0, 0, 0.3); }
+}
