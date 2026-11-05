@@ -50,7 +50,8 @@ para quem tiver permissão. Não existe link público.
 ## Regra nova no banco
 
 - A agência nunca fica sem administrador: o último admin não pode se rebaixar nem se remover
-  (trigger `organization_members_keep_admin`, erro 23514). Testado no pgTAP.
+  (erro 23514, testado no pgTAP). Correção posterior: essa regra já existia desde a Fase 2
+  (`org_members_keep_admin`); a cópia criada aqui foi removida na Fase 4.
 
 ## Ambiente local
 

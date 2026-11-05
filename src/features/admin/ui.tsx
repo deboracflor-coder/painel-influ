@@ -10,6 +10,7 @@ export function useFeedback() {
     node: msg && <p className={msg.ok ? 'form-notice' : 'form-error'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</p>,
     ok: (text: string) => setMsg({ ok: true, text }),
     fail: async (err: unknown) => setMsg({ ok: false, text: await errorMessage(err) }),
+    failText: (text: string) => setMsg({ ok: false, text }),
     clear: () => setMsg(null),
   };
 }

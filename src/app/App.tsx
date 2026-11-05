@@ -5,6 +5,7 @@ import { LoginPage } from '../features/auth/LoginPage';
 import { RequireAuth } from '../features/auth/RequireAuth';
 import { ResetPasswordPage } from '../features/auth/ResetPasswordPage';
 import { ClientProvider } from '../features/clients/ClientContext';
+import { AccountsPage } from '../features/accounts/AccountsPage';
 import { ClientsPage } from '../features/admin/ClientsPage';
 import { PeoplePage } from '../features/admin/PeoplePage';
 import { ContentPage } from '../features/dashboard/ContentPage';
@@ -32,6 +33,7 @@ const router = createBrowserRouter([
       { path: 'redes/:platform', element: <NetworkPage /> },
       { path: 'publicacoes', element: <ContentPage /> },
       { path: 'historico', element: <SyncHistoryPage /> },
+      { path: 'contas', element: <AccountsPage /> },
       { path: 'clientes', element: <ClientsPage /> },
       { path: 'pessoas', element: <PeoplePage /> },
     ],

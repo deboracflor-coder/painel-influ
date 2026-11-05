@@ -424,3 +424,17 @@ enabled = true
 [functions.admin-users]
 # O gateway exige um JWT válido; a função ainda confere se quem chama é admin da organização.
 verify_jwt = true
+
+[functions.oauth-start]
+verify_jwt = true
+
+# Chamado pelo navegador vindo da Meta/Google, sem sessão do Supabase: a segurança é o estado de uso único.
+[functions.oauth-callback]
+verify_jwt = false
+
+[functions.account-actions]
+verify_jwt = true
+
+# Chamado pelo pg_cron; protegido pelo cabeçalho x-cron-secret.
+[functions.sync-worker]
+verify_jwt = false

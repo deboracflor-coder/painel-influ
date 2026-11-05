@@ -54,6 +54,13 @@ select is_empty($$
 select ok(not has_column_privilege('authenticated', 'public.social_accounts', 'token_secret_id', 'select'),
   'Referência do token no Vault não é legível pelo navegador');
 
+select ok(not has_function_privilege('authenticated', 'public.ingest_sync_batch(uuid, jsonb)', 'execute'),
+  'Gravação da coleta: só service role');
+select ok(has_function_privilege('authenticated', 'public.can_operate(uuid)', 'execute'),
+  'Consulta de permissão de operação: usuário logado');
+select ok(not has_function_privilege('authenticated', 'private.dispatch_sync()', 'execute'),
+  'Disparo do agendador: só o banco');
+
 select ok(not has_function_privilege('authenticated', 'public.read_account_token(uuid)', 'execute'),
   'Leitura de token: só service role');
 select ok(not has_function_privilege('authenticated', 'public.store_account_token(uuid, jsonb)', 'execute'),
