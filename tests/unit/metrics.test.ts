@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aggregateER, engagement, followerGrowth, pctChange, postER, rank, sum, totals } from '../../src/domain/metrics';
+import { aggregateER, engagement, followerGrowth, notProvided, pctChange, postER, rank, sum, totals } from '../../src/domain/metrics';
 import { previousPeriod, presetPeriod, weekStarts } from '../../src/domain/periods';
 import type { Post, PostMetrics } from '../../src/domain/types';
 
@@ -79,5 +79,15 @@ describe('ranking', () => {
   it('ordena do maior para o menor e deixa sem dado por último', () => {
     const ps = [post('a', 'instagram', { views: 5 }), post('b', 'instagram', {}), post('c', 'instagram', { views: 9 })];
     expect(rank(ps, 'views').map((p) => p.id)).toEqual(['c', 'a', 'b']);
+  });
+});
+
+describe('Métricas que a rede não fornece', () => {
+  it('YouTube não fornece alcance nem salvamentos; Facebook não fornece salvamentos', () => {
+    expect(notProvided('youtube', 'reach')).toBeTruthy();
+    expect(notProvided('youtube', 'saves')).toBeTruthy();
+    expect(notProvided('facebook', 'saves')).toBeTruthy();
+    expect(notProvided('instagram', 'saves')).toBeUndefined();
+    expect(notProvided('youtube', 'views')).toBeUndefined();
   });
 });

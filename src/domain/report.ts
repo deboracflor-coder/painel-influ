@@ -161,6 +161,14 @@ export function reportTables(r: Report, posts: Post[] = r.input.cur, daily: Dail
 }
 
 /** CSV no padrão brasileiro: ponto e vírgula, vírgula decimal e BOM (abre certo no Excel e no Sheets pt-BR). Vazio = sem dado. */
+/**
+ * Nome de arquivo só com ASCII: alguns navegadores trocam por "download" o nome de um
+ * arquivo gerado na página quando ele tem acentos.
+ */
+export function asciiFileName(name: string): string {
+  return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x20-\x7e]/g, '').replace(/[\\/:*?"<>|]/g, '-').replace(/\s+/g, ' ').trim();
+}
+
 export function toCsv(rows: Cell[][]): string {
   const cell = (v: Cell) => {
     if (v === null || v === undefined) return '';

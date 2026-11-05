@@ -114,8 +114,8 @@ for (const a of accounts) {
       likes: Math.round(views * (0.02 + rnd() * 0.06)),
       comments: Math.round(views * (0.001 + rnd() * 0.006)),
       shares: Math.round(views * (0.001 + rnd() * 0.01)),
-      // Facebook não entrega salvamentos: fica sem dado, nunca zero.
-      saves: a.platform === 'facebook' ? null : Math.round(views * (0.002 + rnd() * 0.02)),
+      // Facebook e YouTube não entregam salvamentos: fica sem dado, nunca zero.
+      saves: a.platform !== 'instagram' ? null : Math.round(views * (0.002 + rnd() * 0.02)),
       watch_time_seconds: yt ? views * between(20, 240) : null,
       avg_watch_time_seconds: yt ? between(20, 240) : null,
       // Um em cada dez traz uma métrica lançada à mão, para exibir o selo "Dado manual".

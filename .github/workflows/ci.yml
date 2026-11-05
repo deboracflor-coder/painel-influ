@@ -29,6 +29,15 @@ jobs:
           VITE_SUPABASE_URL: http://127.0.0.1:54321
           VITE_SUPABASE_ANON_KEY: chave-publica-de-exemplo-para-build
         run: npm run build
+      - name: Orçamento de tamanho do app
+        run: npm run check:bundle
+      - name: Dependências do app publicado sem vulnerabilidade alta ou crítica
+        run: npm audit --omit=dev --audit-level=high
+      - name: Nenhuma credencial versionada
+        run: |
+          if git ls-files -z -- . ':!.github/workflows/ci.yml' | xargs -0 grep -nIE 'eyJhbGciOi[A-Za-z0-9_-]{20,}\.|GOCSPX-|EAA[A-Za-z0-9]{40,}|ya29\.[A-Za-z0-9_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY'; then
+            echo "Possível credencial no repositório"; exit 1
+          fi
 
   database:
     name: Banco (RLS, privilégios e isolamento)
@@ -68,3 +77,31 @@ jobs:
       - name: Log das Edge Functions
         if: failure()
         run: cat /tmp/functions.log || true
+
+  e2e:
+    name: Navegador (ponta a ponta)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Navegador para os testes
+        run: npx playwright install --with-deps chromium
+      - name: Subir Supabase local
+        run: npx supabase start -x studio,imgproxy,vector,logflare,supavisor,postgres-meta,edge-runtime
+      - name: Testes de ponta a ponta (dados fictícios do seed)
+        run: |
+          eval "$(npx supabase status -o env | sed 's/^/export /')"
+          SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" npm run test:e2e
+      - name: Relatório dos testes
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7

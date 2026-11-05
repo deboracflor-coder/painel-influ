@@ -9,3 +9,5 @@ supabase/.branches/
 coverage/
 test-results/
 supabase/functions/.local-ca.pem
+test-results/
+playwright-report/
