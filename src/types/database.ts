@@ -331,6 +331,20 @@ isOneToOne: false
       referencedColumns: ["id","client_id","organization_id"]
     }
                   ]
+                },"user_integrations": {
+                  Row: {
+                    "connected_at": string,"provider": string,"token_secret_id": string | null,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "connected_at"?: string,"provider": string,"token_secret_id"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "connected_at"?: string,"provider"?: string,"token_secret_id"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 }
           }
           Views: {
@@ -348,17 +362,32 @@ isOneToOne: false
               "account_id": string,"avg_watch_time_seconds": number,"caption": string,"collected_at": string,"comments": number,"follows": number,"format": Database["public"]['Enums']["post_format_t"],"id": string,"impressions": number,"likes": number,"link_clicks": number,"permalink": string,"platform": Database["public"]['Enums']["platform_t"],"profile_visits": number,"published_at": string,"reach": number,"saves": number,"shares": number,"source": Database["public"]['Enums']["data_source_t"],"thumbnail_url": string,"views": number,"watch_time_seconds": number
             }[]
                            },
+"delete_manual_daily":
+{ Args: { "p_account": string,"p_from": string,"p_to": string }; Returns: number
+                           },
+"delete_user_token":
+{ Args: { "p_provider": string,"p_user": string }; Returns: undefined
+                           },
+"import_daily_metrics":
+{ Args: { "p_account": string,"p_rows": Json }; Returns: Json
+                           },
 "ingest_sync_batch":
 { Args: { "p_account": string,"p_payload": Json }; Returns: Json
                            },
 "read_account_token":
 { Args: { "p_account_id": string }; Returns: Json
                            },
+"read_user_token":
+{ Args: { "p_provider": string,"p_user": string }; Returns: Json
+                           },
 "revoke_account_connection":
 { Args: { "p_account_id": string }; Returns: undefined
                            },
 "store_account_token":
 { Args: { "p_account_id": string,"p_token": Json }; Returns: string
+                           },
+"store_user_token":
+{ Args: { "p_provider": string,"p_token": Json,"p_user": string }; Returns: undefined
                            }
           }
           Enums: {

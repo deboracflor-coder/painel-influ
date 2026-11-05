@@ -16,7 +16,8 @@ const run = Date.now().toString(36);
 
 // ---------- Servidor de teste no lugar de Meta e Google ----------
 const seen: string[] = [];
-function provider(req: import('node:http').IncomingMessage): [number, unknown] {
+const bodies: Record<string, unknown> = {};
+function provider(req: import('node:http').IncomingMessage, body: string): [number, unknown] {
   const u = new URL(req.url!, 'http://x');
   const p = u.pathname.replace('/graph/v26.0', '');
   const tok = u.searchParams.get('access_token');
@@ -42,6 +43,8 @@ function provider(req: import('node:http').IncomingMessage): [number, unknown] {
   if (p === `/pg-${run}_1/insights`) return [200, { data: [{ name: 'post_media_view', values: [{ value: 70 }] }] }];
   if (p === '/google/token') return [200, { access_token: 'G-ACCESS', refresh_token: 'G-REFRESH', expires_in: 3600, scope: 'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/yt-analytics.readonly' }];
   if (p === '/google/revoke') return [200, {}];
+  if (p === '/sheets/spreadsheets') { bodies.create = JSON.parse(body); return [200, { spreadsheetId: `sh-${run}`, spreadsheetUrl: `https://docs.google.com/spreadsheets/d/sh-${run}` }]; }
+  if (p === `/sheets/spreadsheets/sh-${run}/values:batchUpdate`) { bodies.values = JSON.parse(body); return [200, {}]; }
   if (p === '/yt/channels') return [200, { items: [{ id: `uc-${run}`, snippet: { title: 'Canal de teste', customUrl: '@canalteste' }, statistics: { subscriberCount: '320' }, contentDetails: { relatedPlaylists: { uploads: 'UU-teste' } } }] }];
   if (p === '/yt/playlistItems') return [200, { items: [{ contentDetails: { videoId: `vid-${run}`, videoPublishedAt: new Date(Date.now() - 3 * 86400_000).toISOString() } }] }];
   if (p === '/yt/videos') return [200, { items: [{ id: `vid-${run}`, snippet: { title: 'Vídeo de teste', publishedAt: new Date(Date.now() - 3 * 86400_000).toISOString(), thumbnails: {} }, statistics: { viewCount: '150', likeCount: '12', commentCount: '1' } }] }];
@@ -89,8 +92,12 @@ const account = async (platform: string) => {
 
 beforeAll(async () => {
   server = createServer((req, res) => {
-    const [status, body] = provider(req);
-    res.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(body));
+    let raw = '';
+    req.on('data', (c) => { raw += c; });
+    req.on('end', () => {
+      const [status, body] = provider(req, raw);
+      res.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(body));
+    });
   });
   await new Promise<void>((r) => server.listen(54399, '0.0.0.0', r));
   await Promise.all(['adm', 'ana', 'viewer'].map(user));
@@ -226,3 +233,52 @@ describe('YouTube', () => {
   });
 });
 
+
+describe('Google Sheets (exportação)', () => {
+  const tables = [{ name: 'Resumo', rows: [['Indicador', 'Valor'], ['Visualizações', 4500], ['Salvamentos', null], ['=1+1', 'texto']] }];
+  it('sem conta Google conectada, pede conexão', async () => {
+    const r = await call('sheets-export', 'viewer', { action: 'export', title: 'Relatório', tables });
+    expect(r.status).toBe(409);
+    expect(r.body.needs_connection).toBe(true);
+  });
+  it('pessoa do cliente conecta a própria conta Google e volta para o relatório', async () => {
+    const start = await call('oauth-start', 'viewer', { client_id: ids.client, provider: 'google_sheets', app_origin: APP });
+    expect(start.status).toBe(200);
+    expect(String(start.body.url)).toContain('drive.file');
+    const state = new URL(String(start.body.url)).searchParams.get('state')!;
+    const res = await fetch(`${url}/functions/v1/oauth-callback?code=codigo&state=${state}`, { redirect: 'manual' });
+    expect(res.headers.get('location')).toContain(`${APP}/relatorio?`);
+    expect(res.headers.get('location')).toContain('sheets=ok');
+  });
+  it('exporta: planilha nova com valores crus (nada vira fórmula) e vazio para sem dado', async () => {
+    const r = await call('sheets-export', 'viewer', { action: 'export', title: 'Relatório teste', tables });
+    expect(r.status).toBe(200);
+    expect(r.body.url).toBe(`https://docs.google.com/spreadsheets/d/sh-${run}`);
+    expect(bodies.create).toMatchObject({ properties: { title: 'Relatório teste', locale: 'pt_BR' }, sheets: [{ properties: { title: 'Resumo' } }] });
+    expect(bodies.values).toMatchObject({ valueInputOption: 'RAW', data: [{ range: "'Resumo'!A1", values: [['Indicador', 'Valor'], ['Visualizações', 4500], ['Salvamentos', ''], ['=1+1', 'texto']] }] });
+  });
+  it('conexão do Google é de cada pessoa: o admin não usa a do cliente', async () => {
+    expect((await call('sheets-export', 'adm', { action: 'export', title: 'x', tables })).status).toBe(409);
+  });
+  it('desconectar revoga e apaga o acesso', async () => {
+    const before = seen.filter((x) => x === '/google/revoke').length;
+    expect((await call('sheets-export', 'viewer', { action: 'disconnect' })).status).toBe(200);
+    expect(seen.filter((x) => x === '/google/revoke').length).toBe(before + 1);
+    const { data } = await admin.from('user_integrations').select('user_id').eq('user_id', ids.viewer!);
+    expect(data).toEqual([]);
+  });
+});
+
+describe('Importação manual pela API', () => {
+  it('pessoa do cliente não importa; admin importa e o dado aparece como manual', async () => {
+    const [ig] = await account('instagram');
+    const as = (who: string) => createClient(url, anon, { global: { headers: { Authorization: `Bearer ${tokens[who]}` } }, auth: { persistSession: false } });
+    const rows = [{ day: '2025-01-01', followers: 10 }];
+    const denied = await as('viewer').rpc('import_daily_metrics', { p_account: ig!.id, p_rows: rows });
+    expect(denied.error?.code).toBe('42501');
+    const ok = await as('adm').rpc('import_daily_metrics', { p_account: ig!.id, p_rows: rows });
+    expect(ok.data).toEqual({ inserted: 1, updated: 0, skipped_api: 0 });
+    const { data } = await as('viewer').from('account_daily_metrics').select('followers, source').eq('account_id', ig!.id).eq('day', '2025-01-01').single();
+    expect(data).toEqual({ followers: 10, source: 'manual' });
+  });
+});

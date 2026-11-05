@@ -5,7 +5,7 @@ import { allowedOrigins, redirectUri, requireUser, serviceClient } from '../_sha
 import { corsHeaders, json } from '../_shared/http.ts';
 import { authorizationUrl, googleConfig, metaConfig } from '../_shared/providers.ts';
 
-const Body = z.object({ client_id: z.uuid(), provider: z.enum(['meta', 'google']), app_origin: z.url() });
+const Body = z.object({ client_id: z.uuid(), provider: z.enum(['meta', 'google', 'google_sheets']), app_origin: z.url() });
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -17,13 +17,21 @@ Deno.serve(async (req) => {
   if (!parsed.success) return json(400, { error: 'Dados inválidos' });
   const b = parsed.data;
 
-  const { data: canOperate, error } = await who.caller.rpc('can_operate', { p_client: b.client_id });
-  if (error || !canOperate) return json(403, { error: 'Só a equipe responsável pelo cliente conecta contas' });
+  if (b.provider === 'google_sheets') {
+    // Exportar é leitura: basta poder ver o cliente (a RLS decide).
+    const { data: visible } = await who.caller.from('clients').select('id').eq('id', b.client_id).maybeSingle();
+    if (!visible) return json(403, { error: 'Sem acesso a este cliente' });
+  } else {
+    const { data: canOperate, error } = await who.caller.rpc('can_operate', { p_client: b.client_id });
+    if (error || !canOperate) return json(403, { error: 'Só a equipe responsável pelo cliente conecta contas' });
+  }
 
   if (b.provider === 'meta' ? !metaConfig() : !googleConfig()) {
     return json(503, { error: b.provider === 'meta'
       ? 'A integração com Instagram e Facebook ainda não foi configurada (app da Meta pendente).'
-      : 'A integração com o YouTube ainda não foi configurada (projeto do Google pendente).' });
+      : b.provider === 'google'
+        ? 'A integração com o YouTube ainda não foi configurada (projeto do Google pendente).'
+        : 'A exportação para o Google Sheets ainda não foi configurada (projeto do Google pendente).' });
   }
   const origin = b.app_origin.replace(/\/$/, '');
   if (!allowedOrigins().includes(origin)) return json(400, { error: 'Endereço do app não autorizado (APP_URL)' });

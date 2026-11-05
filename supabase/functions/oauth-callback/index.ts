@@ -2,10 +2,10 @@
 // Valida o estado, troca o código pelo token, grava as contas e o token no Vault e
 // devolve a pessoa para a tela de contas. Nenhum token aparece na URL de retorno.
 import { serviceClient, redirectUri } from '../_shared/clients.ts';
-import { type Discovered, discoverGoogle, discoverMeta } from '../_shared/providers.ts';
+import { type Discovered, discoverGoogle, discoverMeta, googleExchange } from '../_shared/providers.ts';
 
-const back = (origin: string, client: string, params: Record<string, string>) =>
-  Response.redirect(`${origin}/contas?${new URLSearchParams({ cliente: client, ...params })}`, 303);
+const back = (origin: string, client: string, params: Record<string, string>, path = '/contas') =>
+  Response.redirect(`${origin}${path}?${new URLSearchParams({ cliente: client, ...params })}`, 303);
 
 Deno.serve(async (req) => {
   const u = new URL(req.url);
@@ -19,6 +19,19 @@ Deno.serve(async (req) => {
     .eq('state', state).is('used_at', null).gt('expires_at', new Date().toISOString())
     .select('organization_id, client_id, provider, user_id, code_verifier, return_to').maybeSingle();
   if (!st || !st.return_to) return new Response('Link de conexão inválido ou vencido. Volte ao painel e tente de novo.', { status: 400 });
+  if (st.provider === 'google_sheets') {
+    // Conta Google da própria pessoa, só para exportar planilhas.
+    if (denied || !code) return back(st.return_to, st.client_id, { sheets: 'cancelada' }, '/relatorio');
+    try {
+      const t = await googleExchange(code, redirectUri(), st.code_verifier ?? '');
+      const { error } = await admin.rpc('store_user_token', { p_user: st.user_id, p_provider: 'google_sheets', p_token: t.token });
+      if (error) throw error;
+      return back(st.return_to, st.client_id, { sheets: 'ok' }, '/relatorio');
+    } catch (e) {
+      console.error('oauth-callback sheets', (e as Error).message);
+      return back(st.return_to, st.client_id, { sheets: 'erro' }, '/relatorio');
+    }
+  }
   if (denied || !code) return back(st.return_to, st.client_id, { conexao: 'cancelada' });
 
   let found: Discovered[];
