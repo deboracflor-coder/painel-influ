@@ -438,3 +438,6 @@ verify_jwt = true
 # Chamado pelo pg_cron; protegido pelo cabeçalho x-cron-secret.
 [functions.sync-worker]
 verify_jwt = false
+
+[functions.sheets-export]
+verify_jwt = true

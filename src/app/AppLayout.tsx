@@ -32,7 +32,7 @@ export function AppLayout() {
 
   const kind = access.data?.kind ?? 'none';
   const isAgency = kind === 'org_admin' || kind === 'org_analyst';
-  const adminPage = /^\/(clientes|pessoas)/.test(pathname);
+  const adminPage = /^\/(clientes|pessoas|monitoramento)/.test(pathname);
   return (
     <div className="shell">
       <aside className={`sidebar${menuOpen ? ' open' : ''}`} aria-label="Navegação">
@@ -48,10 +48,13 @@ export function AppLayout() {
           <NavLink className="nav-link" to={{ pathname: '/', search }} end>Visão executiva</NavLink>
           <NavLink className="nav-link" to={{ pathname: '/redes', search }}>Por rede</NavLink>
           <NavLink className="nav-link" to={{ pathname: '/publicacoes', search }}>Publicações</NavLink>
+          <NavLink className="nav-link" to={{ pathname: '/relatorio', search }}>Relatório</NavLink>
           {isAgency && <>
             <div className="nav-group">Agência</div>
             <NavLink className="nav-link" to={{ pathname: '/contas', search }}>Contas conectadas</NavLink>
             <NavLink className="nav-link" to={{ pathname: '/historico', search }}>Histórico de coleta</NavLink>
+            <NavLink className="nav-link" to={{ pathname: '/monitoramento', search }}>Monitoramento</NavLink>
+            <NavLink className="nav-link" to={{ pathname: '/importacao', search }}>Importação manual</NavLink>
             {kind === 'org_admin' && <>
               <NavLink className="nav-link" to={{ pathname: '/clientes', search }}>Clientes</NavLink>
               <NavLink className="nav-link" to={{ pathname: '/pessoas', search }}>Pessoas</NavLink>
@@ -70,7 +73,7 @@ export function AppLayout() {
         <header className="topbar">
           <button className="icon-btn menu-btn" type="button" aria-label="Abrir menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)}>☰</button>
           <div className="topbar-title">
-            <h1>{adminPage ? (pathname.startsWith('/clientes') ? 'Clientes' : 'Pessoas') : current?.name ?? 'Visão executiva'}</h1>
+            <h1>{adminPage ? (pathname.startsWith('/clientes') ? 'Clientes' : pathname.startsWith('/monitoramento') ? 'Monitoramento' : 'Pessoas') : current?.name ?? 'Visão executiva'}</h1>
             {isDemo && !adminPage && <span className="badge badge-demo" title="Cliente de demonstração: nada aqui é dado real">Dados fictícios</span>}
             <div className="topbar-meta">
               <span>A tela se atualiza a cada {REFRESH_MS / 1000} s{last ? ` · última às ${last.toLocaleTimeString('pt-BR')}` : ''}</span>

@@ -38,7 +38,10 @@ Facebook**; quem conecta precisa ter acesso de administração à Página.
    Esses escopos são sensíveis: para sair do modo *Teste* o Google faz uma verificação.
    **Atenção:** em modo *Teste*, o acesso concedido vence em 7 dias; a conta aparece como
    “Acesso expirado” e precisa ser reconectada. Para uso contínuo, publique o app e conclua a verificação.
+   Inclua também `drive.file` (não sensível): é o que permite exportar relatórios para o Google Sheets.
 3. **Credenciais → Criar ID do cliente OAuth → Aplicativo da Web**, com o endereço de retorno acima.
+   O mesmo cliente OAuth serve para o YouTube e para a exportação ao Google Sheets.
+   Ative também a **Google Sheets API** no projeto.
 4. Copie o **ID do cliente** e a **Chave secreta do cliente**.
 
 ## 3. Segredos das Edge Functions

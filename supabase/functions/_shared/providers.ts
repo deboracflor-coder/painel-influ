@@ -3,10 +3,10 @@
 import { googleError, metaError } from './collect/errors.ts';
 import { type FetchJson, type Platform, ProviderError } from './collect/types.ts';
 
-export type Provider = 'meta' | 'google';
+export type Provider = 'meta' | 'google' | 'google_sheets';
 
 export interface MetaConfig { appId: string; appSecret: string; version: string; graph: string; dialog: string }
-export interface GoogleConfig { clientId: string; clientSecret: string; auth: string; token: string; revoke: string; data: string; analytics: string }
+export interface GoogleConfig { clientId: string; clientSecret: string; auth: string; token: string; revoke: string; data: string; analytics: string; sheets: string }
 
 const get = (name: string) => Deno.env.get(name) ?? '';
 
@@ -32,14 +32,17 @@ export function googleConfig(): GoogleConfig | null {
     revoke: get('GOOGLE_REVOKE_URL') || 'https://oauth2.googleapis.com/revoke',
     data: get('YOUTUBE_DATA_URL') || 'https://www.googleapis.com/youtube/v3',
     analytics: get('YOUTUBE_ANALYTICS_URL') || 'https://youtubeanalytics.googleapis.com/v2',
+    sheets: get('SHEETS_API_URL') || 'https://sheets.googleapis.com/v4',
   };
 }
 
 export const META_SCOPES = ['pages_show_list', 'pages_read_engagement', 'read_insights', 'business_management', 'instagram_basic', 'instagram_manage_insights'];
 export const GOOGLE_SCOPES = ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/yt-analytics.readonly'];
+/** drive.file: o app só acessa as planilhas que ele mesmo criar. */
+export const SHEETS_SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 
 /** fetch que devolve JSON ou lança erro classificado do provedor. */
-export function makeFetchJson(provider: Provider, onRaw?: (url: string, body: unknown) => void): FetchJson {
+export function makeFetchJson(provider: 'meta' | 'google', onRaw?: (url: string, body: unknown) => void): FetchJson {
   return async (url, init) => {
     let res: Response;
     try {
@@ -77,7 +80,8 @@ export async function authorizationUrl(provider: Provider, state: string, redire
   const c = googleConfig()!;
   const { verifier, challenge } = await pkce();
   const q = new URLSearchParams({
-    client_id: c.clientId, redirect_uri: redirectUri, state, response_type: 'code', scope: GOOGLE_SCOPES.join(' '),
+    client_id: c.clientId, redirect_uri: redirectUri, state, response_type: 'code',
+    scope: (provider === 'google_sheets' ? SHEETS_SCOPES : GOOGLE_SCOPES).join(' '),
     access_type: 'offline', prompt: 'consent', include_granted_scopes: 'true', code_challenge: challenge, code_challenge_method: 'S256',
   });
   return { url: `${c.auth}?${q}`, verifier };
@@ -114,16 +118,23 @@ export async function discoverMeta(code: string, redirectUri: string): Promise<D
   return out;
 }
 
-export async function discoverGoogle(code: string, redirectUri: string, verifier: string): Promise<Discovered[]> {
+/** Troca o código do Google por tokens (com PKCE). */
+export async function googleExchange(code: string, redirectUri: string, verifier: string) {
   const c = googleConfig()!;
-  const f = makeFetchJson('google');
-  const t = await f(c.token, {
+  const t = await makeFetchJson('google')(c.token, {
     method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ code, client_id: c.clientId, client_secret: c.clientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code', code_verifier: verifier }),
   }) as { access_token: string; refresh_token?: string; expires_in: number; scope?: string };
   if (!t.refresh_token) throw new Error('O Google não devolveu acesso permanente (refresh token). Tente conectar de novo.');
+  return { ...t, refresh_token: t.refresh_token, token: { provider: 'google', refresh_token: t.refresh_token, access_token: t.access_token, expires_at: new Date(Date.now() + t.expires_in * 1000).toISOString() } };
+}
+
+export async function discoverGoogle(code: string, redirectUri: string, verifier: string): Promise<Discovered[]> {
+  const c = googleConfig()!;
+  const f = makeFetchJson('google');
+  const t = await googleExchange(code, redirectUri, verifier);
   const ch = await f(`${c.data}/channels?part=snippet&mine=true`, { headers: { Authorization: `Bearer ${t.access_token}` } }) as { items?: { id: string; snippet?: { title?: string; customUrl?: string } }[] };
-  const token = { provider: 'google', refresh_token: t.refresh_token, access_token: t.access_token, expires_at: new Date(Date.now() + t.expires_in * 1000).toISOString() };
+  const token = t.token;
   return (ch.items ?? []).map((x) => ({
     platform: 'youtube' as const, external_account_id: x.id, handle: x.snippet?.customUrl ?? null, display_name: x.snippet?.title ?? null,
     token, token_expires_at: null, scopes: (t.scope ?? '').split(' ').filter(Boolean),

@@ -6,6 +6,9 @@ import { RequireAuth } from '../features/auth/RequireAuth';
 import { ResetPasswordPage } from '../features/auth/ResetPasswordPage';
 import { ClientProvider } from '../features/clients/ClientContext';
 import { AccountsPage } from '../features/accounts/AccountsPage';
+import { ReportPage } from '../features/report/ReportPage';
+import { MonitoringPage } from '../features/monitoring/MonitoringPage';
+import { ImportPage } from '../features/import/ImportPage';
 import { ClientsPage } from '../features/admin/ClientsPage';
 import { PeoplePage } from '../features/admin/PeoplePage';
 import { ContentPage } from '../features/dashboard/ContentPage';
@@ -32,8 +35,11 @@ const router = createBrowserRouter([
       { path: 'redes', element: <NetworkPage /> },
       { path: 'redes/:platform', element: <NetworkPage /> },
       { path: 'publicacoes', element: <ContentPage /> },
+      { path: 'relatorio', element: <ReportPage /> },
       { path: 'historico', element: <SyncHistoryPage /> },
       { path: 'contas', element: <AccountsPage /> },
+      { path: 'monitoramento', element: <MonitoringPage /> },
+      { path: 'importacao', element: <ImportPage /> },
       { path: 'clientes', element: <ClientsPage /> },
       { path: 'pessoas', element: <PeoplePage /> },
     ],

@@ -56,3 +56,19 @@ td .form-error, td .form-notice { margin: 6px 0 0; }
 /* ---------- Fase 4: contas conectadas ---------- */
 .row-actions .confirm-inline { margin-left: 6px; }
 @media (max-width: 1280px) { .row-actions { white-space: normal; } .row-actions .btn { margin: 2px 0 2px 6px; } }
+/* ---------- Fase 5: relatório ---------- */
+.report-controls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.report-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.report-feedback { flex-basis: 100%; }
+.report-feedback:empty { display: none; }
+.report-notes { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ink-2); }
+td.strong, .n.strong { font-weight: 800; }
+@media print {
+  .report-controls, .menu-btn, .sync-strip { display: none !important; }
+  .main, .view { padding: 0 !important; }
+  .slide-cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .table-wrap { overflow: visible !important; }
+  a { color: inherit; text-decoration: none; }
+}
+.import-preview { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; }
+ul.form-error { margin: 0; padding-left: 18px; }
