@@ -3,8 +3,9 @@
 Plataforma para uma agência acompanhar o desempenho orgânico das redes sociais dos seus clientes.
 A equipe da agência vê os clientes que tem autorização; cada cliente vê só os próprios dados.
 
-**Situação:** Fase 2 (fundação) concluída: banco, permissões, testes de isolamento e login.
-Indicadores e gráficos chegam na Fase 3; conexão com as redes, na Fase 4.
+**Situação:** Fase 3 (painel) entregue para validação: visão executiva, por rede, publicações,
+histórico de coleta, filtros e gestão de clientes e pessoas com convite por e-mail.
+A conexão com as redes chega na Fase 4; até lá só o ambiente local tem dados, e eles são fictícios.
 A versão anterior (Next.js, influenciador + marcas parceiras) está na branch `legado/v0-nextjs`.
 
 Regras do projeto: nenhuma métrica é inventada; métrica que a API não fornece aparece como
@@ -19,11 +20,13 @@ React + Vite + TypeScript (Vercel) · Supabase: PostgreSQL, Auth, RLS, Edge Func
 | Pasta | Conteúdo |
 |---|---|
 | `src/app` | rotas, layout e configuração de dados (atualização da tela a cada 60 s) |
-| `src/features` | `auth` (login, recuperação de senha), `clients` (seleção de cliente e papel), `home` |
-| `src/components` | estados de carregamento, erro e vazio |
+| `src/features` | `auth`, `clients` (seleção e papel), `filters`, `data` (consultas), `dashboard` (visão executiva, por rede, publicações), `sync` (histórico), `admin` (clientes e pessoas) |
+| `src/domain` | cálculo de métricas, períodos e formatação, sem dependência de tela |
+| `src/components` | KPIs, cards de publicação, gráficos SVG, estados de carregamento/erro/vazio |
 | `src/styles` | `prototipo.css` (identidade visual do protótipo) + `app.css` |
 | `src/types/database.ts` | tipos gerados do banco (`npm run db:types`) |
-| `supabase/migrations` | estrutura, segurança (privilégios + RLS) e auditoria |
+| `supabase/migrations` | estrutura, segurança (privilégios + RLS), auditoria, leitura do painel e regra de equipe |
+| `supabase/functions` | `admin-users`: convite de pessoas (única peça que usa a service role) |
 | `supabase/tests` | testes pgTAP de privilégios e isolamento |
 | `tests/unit`, `tests/api` | testes do app e de isolamento pela API REST |
 | `docs/decisions`, `docs/runbooks` | decisões técnicas e passo a passo de configuração |
@@ -38,11 +41,16 @@ npm run db:start                       # sobe o Supabase local
 npx supabase status -o env             # mostra API_URL, ANON_KEY e SERVICE_ROLE_KEY locais
 cp .env.example .env.local             # preencha VITE_SUPABASE_ANON_KEY com a ANON_KEY local
 SUPABASE_URL=<API_URL> SUPABASE_SERVICE_ROLE_KEY=<SERVICE_ROLE_KEY> npx tsx scripts/seed-local.ts
+npx supabase functions serve           # em outro terminal: convites (tela Pessoas)
 npm run dev                            # http://127.0.0.1:5173
 ```
 
+E-mails de convite no ambiente local caem no Mailpit: http://127.0.0.1:54324.
+
 O `seed-local` cria uma agência e dois clientes **fictícios** com três usuários
-(administração, analista e cliente). Ele se recusa a rodar fora do Supabase local.
+(administração, analista e cliente), quatro contas de exemplo, 120 dias de séries diárias,
+publicações com métricas e um histórico de coleta com um erro de token expirado. Tudo marcado
+como demonstração (selo “Dados fictícios”). Ele se recusa a rodar fora do Supabase local.
 
 ## Testes
 
@@ -52,7 +60,7 @@ npm run db:test                                  # pgTAP: privilégios e isolame
 SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... npm run test:api
 ```
 
-O CI (`.github/workflows/ci.yml`) roda tudo isso em cada PR, sobe o Supabase local, confere se os
+O CI (`.github/workflows/ci.yml`) roda tudo isso em cada PR, sobe o Supabase local e as Edge Functions, confere se os
 tipos do banco estão em dia e se a service role não aparece no bundle.
 
 ## Publicar

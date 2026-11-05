@@ -31,6 +31,8 @@ export function AppLayout() {
   useEffect(() => setMenuOpen(false), [pathname, search]);
 
   const kind = access.data?.kind ?? 'none';
+  const isAgency = kind === 'org_admin' || kind === 'org_analyst';
+  const adminPage = /^\/(clientes|pessoas)/.test(pathname);
   return (
     <div className="shell">
       <aside className={`sidebar${menuOpen ? ' open' : ''}`} aria-label="Navegação">
@@ -43,7 +45,17 @@ export function AppLayout() {
         </div>
         <nav>
           <div className="nav-group">Acompanhar</div>
-          <NavLink className="nav-link" to={{ pathname: '/', search }} end>Visão geral</NavLink>
+          <NavLink className="nav-link" to={{ pathname: '/', search }} end>Visão executiva</NavLink>
+          <NavLink className="nav-link" to={{ pathname: '/redes', search }}>Por rede</NavLink>
+          <NavLink className="nav-link" to={{ pathname: '/publicacoes', search }}>Publicações</NavLink>
+          {isAgency && <>
+            <div className="nav-group">Agência</div>
+            <NavLink className="nav-link" to={{ pathname: '/historico', search }}>Histórico de coleta</NavLink>
+            {kind === 'org_admin' && <>
+              <NavLink className="nav-link" to={{ pathname: '/clientes', search }}>Clientes</NavLink>
+              <NavLink className="nav-link" to={{ pathname: '/pessoas', search }}>Pessoas</NavLink>
+            </>}
+          </>}
         </nav>
         <ClientSelector />
         <div className="user-box">
@@ -57,8 +69,8 @@ export function AppLayout() {
         <header className="topbar">
           <button className="icon-btn menu-btn" type="button" aria-label="Abrir menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)}>☰</button>
           <div className="topbar-title">
-            <h1>{current?.name ?? 'Visão geral'}</h1>
-            {isDemo && <span className="badge badge-demo" title="Cliente de demonstração: nada aqui é dado real">Dados fictícios</span>}
+            <h1>{adminPage ? (pathname.startsWith('/clientes') ? 'Clientes' : 'Pessoas') : current?.name ?? 'Visão executiva'}</h1>
+            {isDemo && !adminPage && <span className="badge badge-demo" title="Cliente de demonstração: nada aqui é dado real">Dados fictícios</span>}
             <div className="topbar-meta">
               <span>A tela se atualiza a cada {REFRESH_MS / 1000} s{last ? ` · última às ${last.toLocaleTimeString('pt-BR')}` : ''}</span>
               <span>A coleta nas redes segue a agenda de cada conta</span>
