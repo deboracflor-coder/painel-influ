@@ -170,3 +170,55 @@ describe('Administrador da Agência A', () => {
     expect((await asAdminA.from('clients').insert({ organization_id: ids.orgB, name: 'Intruso' })).error).not.toBeNull();
   });
 });
+
+describe('Convites (Edge Function admin-users)', () => {
+  const email = `convidado.${run}@example.com`;
+  async function invite(client: SupabaseClient | null, body: Record<string, unknown>) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', apikey: anonKey! };
+    if (client) {
+      const { data } = await client.auth.getSession();
+      headers.Authorization = `Bearer ${data.session!.access_token}`;
+    }
+    const res = await fetch(`${url}/functions/v1/admin-users`, { method: 'POST', headers, body: JSON.stringify(body) });
+    return { status: res.status, body: (await res.json().catch(() => ({}))) as { invited?: boolean; user_id?: string; error?: string } };
+  }
+
+  afterAll(async () => {
+    const { data } = await admin.from('profiles').select('user_id').eq('email', email).maybeSingle();
+    if (data) await admin.auth.admin.deleteUser(data.user_id);
+  });
+
+  it('sem login é recusado', async () => {
+    const r = await invite(null, { organization_id: ids.orgA, email, kind: 'client_viewer', client_id: ids.c1 });
+    expect(r.status).toBe(401);
+  });
+  it('usuário de cliente não convida', async () => {
+    const r = await invite(asC1, { organization_id: ids.orgA, email, kind: 'client_viewer', client_id: ids.c1 });
+    expect(r.status).toBe(403);
+  });
+  it('analista não convida', async () => {
+    const r = await invite(asAnalyst, { organization_id: ids.orgA, email, kind: 'client_viewer', client_id: ids.c1 });
+    expect(r.status).toBe(403);
+  });
+  it('admin A não convida para a Agência B', async () => {
+    const r = await invite(asAdminA, { organization_id: ids.orgB, email, kind: 'client_viewer', client_id: ids.c3 });
+    expect(r.status).toBe(403);
+  });
+  it('admin A não vincula ninguém a cliente da Agência B', async () => {
+    const r = await invite(asAdminA, { organization_id: ids.orgA, email, kind: 'client_viewer', client_id: ids.c3 });
+    expect(r.status).toBe(403);
+  });
+  it('admin A convida usuário para o Cliente 1, e ele só vê o Cliente 1', async () => {
+    const r = await invite(asAdminA, { organization_id: ids.orgA, email, kind: 'client_viewer', client_id: ids.c1 });
+    expect(r.status).toBe(200);
+    expect(r.body.invited).toBe(true);
+    const links = await must(admin.from('client_users').select('client_id').eq('user_id', r.body.user_id!));
+    expect(links.map((l) => l.client_id)).toEqual([ids.c1]);
+    const audit = await must(admin.from('audit_log').select('actor_id').eq('entity', 'client_users').eq('entity_id', r.body.user_id!));
+    expect(audit[0]?.actor_id).toBe(users.adma);
+  });
+  it('convite repetido não duplica o acesso', async () => {
+    const r = await invite(asAdminA, { organization_id: ids.orgA, email, kind: 'client_viewer', client_id: ids.c1 });
+    expect(r.status).toBe(409);
+  });
+});

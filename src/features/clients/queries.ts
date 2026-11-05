@@ -28,6 +28,13 @@ export const ACCESS_LABEL: Record<AccessKind, string> = {
   none: 'Sem acesso liberado',
 };
 
+export interface Access {
+  kind: AccessKind;
+  /** Só para a equipe da agência. */
+  organizationId: string | null;
+  organizationName: string | null;
+}
+
 /** Papel da pessoa logada (para rótulos e menus; a permissão real está no banco). */
 export function useAccess() {
   const { session } = useAuth();
@@ -36,17 +43,17 @@ export function useAccess() {
     queryKey: ['access', uid],
     enabled: !!uid,
     staleTime: 5 * 60_000,
-    queryFn: async (): Promise<{ kind: AccessKind; organizationName: string | null }> => {
+    queryFn: async (): Promise<Access> => {
       const [members, clientUsers] = await Promise.all([
-        supabase.from('organization_members').select('role, organizations(name)').eq('user_id', uid!),
+        supabase.from('organization_members').select('role, organization_id, organizations(name)').eq('user_id', uid!),
         supabase.from('client_users').select('client_id').eq('user_id', uid!).limit(1),
       ]);
       if (members.error) throw members.error;
       if (clientUsers.error) throw clientUsers.error;
       const m = members.data[0];
-      if (m) return { kind: m.role, organizationName: m.organizations?.name ?? null };
-      if (clientUsers.data.length) return { kind: 'client_viewer', organizationName: null };
-      return { kind: 'none', organizationName: null };
+      if (m) return { kind: m.role, organizationId: m.organization_id, organizationName: m.organizations?.name ?? null };
+      if (clientUsers.data.length) return { kind: 'client_viewer', organizationId: null, organizationName: null };
+      return { kind: 'none', organizationId: null, organizationName: null };
     },
   });
 }

@@ -109,6 +109,8 @@ select results_eq('select id from public.posts', $$values ('f1000000-0000-4000-8
 select results_eq('select views from public.post_metric_snapshots', $$values (10::bigint)$$, 'Cliente 1 vê só as próprias métricas de post');
 select results_eq('select followers from public.account_daily_metrics', $$values (100::bigint)$$, 'Cliente 1 vê só a própria série diária');
 select is_empty($$select 1 from public.posts where id = 'f2000000-0000-4000-8000-000000000001'$$, 'Cliente 1 não lê post do Cliente 2 nem pelo id');
+select results_eq($$select views from public.client_posts('c1000000-0000-4000-8000-000000000001', '2026-01-01', '2027-01-01')$$, $$values (10::bigint)$$, 'Leitura do dashboard traz o snapshot do próprio cliente');
+select is_empty($$select 1 from public.client_posts('c2000000-0000-4000-8000-000000000001', '2026-01-01', '2027-01-01')$$, 'Leitura do dashboard não traz posts de outro cliente');
 select is_empty('select 1 from public.sync_runs', 'Cliente não vê histórico de sincronização (só a agência)');
 select is_empty('select 1 from public.sync_errors', 'Cliente não vê erros de integração');
 select is_empty('select 1 from public.audit_log', 'Cliente não vê auditoria');
@@ -202,12 +204,29 @@ select is_empty('select 1 from public.account_daily_metrics', 'Sem vínculo: nen
 reset role;
 
 -- =====================================================================
+-- Equipe: a agência nunca fica sem administrador
+-- =====================================================================
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-0000000000b1","role":"authenticated"}', true);
+set local role authenticated;
+select throws_ok($$update public.organization_members set role = 'org_analyst' where user_id = '00000000-0000-4000-8000-0000000000b1'$$, '23514', null, 'Último admin não pode se rebaixar');
+select throws_ok($$delete from public.organization_members where user_id = '00000000-0000-4000-8000-0000000000b1'$$, '23514', null, 'Último admin não pode se remover');
+reset role;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-0000000000a1","role":"authenticated"}', true);
+set local role authenticated;
+savepoint equipe;
+select lives_ok($$update public.organization_members set role = 'org_admin' where user_id = '00000000-0000-4000-8000-0000000000a2'$$, 'Admin promove analista');
+select lives_ok($$update public.organization_members set role = 'org_analyst' where user_id = '00000000-0000-4000-8000-0000000000a1'$$, 'Com outro admin, o primeiro pode deixar de ser admin');
+rollback to savepoint equipe;
+reset role;
+
+-- =====================================================================
 -- Visitante sem login (anon)
 -- =====================================================================
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
 set local role anon;
 select throws_ok('select * from public.clients', '42501', null, 'Sem login: acesso negado a clientes');
 select throws_ok('select * from public.posts', '42501', null, 'Sem login: acesso negado a posts');
+select throws_ok($$select * from public.client_posts('c1000000-0000-4000-8000-000000000001', '2026-01-01', '2027-01-01')$$, '42501', null, 'Sem login: leitura do dashboard negada');
 select throws_ok('select * from public.post_metric_snapshots', '42501', null, 'Sem login: acesso negado a métricas');
 reset role;
 

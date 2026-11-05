@@ -39,14 +39,22 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Subir Supabase local
-        run: npx supabase start -x studio,imgproxy,vector,logflare,supavisor,postgres-meta,edge-runtime
+        run: npx supabase start -x studio,imgproxy,vector,logflare,supavisor,postgres-meta
       - name: Testes pgTAP (privilégios + isolamento)
         run: npx supabase test db
       - name: Tipos do banco estão em dia
         run: |
           npx supabase gen types typescript --local > /tmp/database.ts
           diff -u src/types/database.ts /tmp/database.ts
-      - name: Testes de isolamento pela API REST
+      - name: Servir Edge Functions
+        run: |
+          nohup npx supabase functions serve > /tmp/functions.log 2>&1 &
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:54321/functions/v1/admin-users -d '{}' || true)
+            [ "$code" = "401" ] && exit 0; sleep 2
+          done
+          cat /tmp/functions.log; exit 1
+      - name: Testes de isolamento pela API REST e convites
         run: |
           eval "$(npx supabase status -o env | sed 's/^/export /')"
           SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" npm run test:api
@@ -55,3 +63,6 @@ jobs:
           eval "$(npx supabase status -o env | sed 's/^/export /')"
           VITE_SUPABASE_URL="$API_URL" VITE_SUPABASE_ANON_KEY="$ANON_KEY" npm run build
           if grep -rqF "$SERVICE_ROLE_KEY" dist; then echo "service role encontrada no bundle"; exit 1; fi
+      - name: Log das Edge Functions
+        if: failure()
+        run: cat /tmp/functions.log || true
